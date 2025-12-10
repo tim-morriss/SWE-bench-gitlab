@@ -268,3 +268,36 @@ The pipeline auto-detects platforms based on:
 - **GitHub**: 5,000 requests/hour (authenticated)
 - **GitLab**: 2,000 requests/hour (authenticated), 300/hour (unauthenticated)
 - Use `GITHUB_TOKENS` or `GITLAB_TOKENS` (comma-separated) for parallel processing
+
+## Development
+
+### Running Collection Scripts
+
+This project uses Poetry for dependency management. All scripts should be run with `poetry run`:
+
+```bash
+# Install dependencies (first time only)
+poetry install
+
+# Run collection scripts
+poetry run python -m swebench.collect.print_pulls [arguments]
+poetry run python -m swebench.collect.build_dataset [arguments]
+poetry run python -m swebench.collect.get_tasks_pipeline [arguments]
+```
+
+### Code Quality
+
+Before committing changes to the collection pipeline:
+
+```bash
+# Check code style
+poetry run ruff check .
+
+# Auto-fix issues
+poetry run ruff check . --fix
+
+# Format code
+poetry run ruff format .
+```
+
+See the main [CONTRIBUTING.md](../../CONTRIBUTING.md) for full development guidelines.

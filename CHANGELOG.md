@@ -39,6 +39,19 @@ Prior to version 1.1.0, not all deployed versions are listed, as the PyPI packag
 * Extended issue resolution keyword matching with flexible regex patterns
 * Platform-agnostic timestamp parsing (supports both UTC and timezone offsets)
 * Graceful handling of GitLab Notes API authentication limitations
+* LangSmith dataset conversion utility (`convert_to_langsmith.py`)
+
+### Code Quality Improvements
+* **Linting**: Fixed all 109 Ruff linting errors
+  * Replaced unpythonic wildcard imports with explicit imports
+  * Added `__all__` to `__init__.py` for proper API exports
+  * Converted lambda expressions to proper `def` functions
+  * Fixed bare `except` clauses (now use specific exceptions)
+  * Fixed `== None` comparisons (now use `is None`)
+  * Prefixed unused variables with `_` to indicate intentional non-use
+* **Code Style**: All code now follows PEP 8 and Python best practices
+* **Import Organization**: Moved all imports to top of files
+* **Type Safety**: Changed `type(x) == str` to `isinstance(x, str)`
 
 ### Breaking Changes
 * None - fully backward compatible with existing GitHub workflows

@@ -159,6 +159,52 @@ To do so, please either file a new pull request or issue and fill in the corresp
 
 Contact person: [Carlos E. Jimenez](http://www.carlosejimenez.com/) and [John Yang](https://john-b-yang.github.io/) (Email: carlosej@princeton.edu, johnby@stanford.edu).
 
+## 🛠️ Development
+
+### Code Quality
+
+This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and code formatting. All code should pass Ruff checks before being committed.
+
+**Run linting checks:**
+```bash
+poetry run ruff check .
+```
+
+**Auto-fix issues (when possible):**
+```bash
+poetry run ruff check . --fix
+```
+
+**Format code:**
+```bash
+poetry run ruff format .
+```
+
+### Development Setup
+
+1. **Install with development dependencies:**
+   ```bash
+   poetry install --with test,docs
+   ```
+
+2. **Activate the virtual environment:**
+   ```bash
+   poetry shell
+   ```
+
+3. **Run tests (if available):**
+   ```bash
+   poetry run pytest
+   ```
+
+### Poetry Commands
+
+- `poetry add <package>` - Add a new dependency
+- `poetry add --group test <package>` - Add a test dependency
+- `poetry update` - Update dependencies to latest compatible versions
+- `poetry show` - List installed packages
+- `poetry env info` - Show virtual environment information
+
 ## ✍️ Citation & license
 MIT license. Check `LICENSE.md`.
 
