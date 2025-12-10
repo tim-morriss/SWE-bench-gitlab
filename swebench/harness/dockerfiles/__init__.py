@@ -1,11 +1,5 @@
-from swebench.harness.dockerfiles.c import (
-    _DOCKERFILE_BASE_C,
-    _DOCKERFILE_INSTANCE_C,
-)
-from swebench.harness.dockerfiles.go import (
-    _DOCKERFILE_BASE_GO,
-    _DOCKERFILE_INSTANCE_GO,
-)
+from swebench.harness.dockerfiles.c import _DOCKERFILE_BASE_C, _DOCKERFILE_INSTANCE_C
+from swebench.harness.dockerfiles.go import _DOCKERFILE_BASE_GO, _DOCKERFILE_INSTANCE_GO
 from swebench.harness.dockerfiles.java import (
     _DOCKERFILE_BASE_JAVA,
     _DOCKERFILE_INSTANCE_JAVA,
@@ -16,14 +10,14 @@ from swebench.harness.dockerfiles.javascript import (
     _DOCKERFILE_ENV_JS,
     _DOCKERFILE_INSTANCE_JS,
 )
+from swebench.harness.dockerfiles.php import (
+    _DOCKERFILE_BASE_PHP,
+    _DOCKERFILE_INSTANCE_PHP,
+)
 from swebench.harness.dockerfiles.python import (
     _DOCKERFILE_BASE_PY,
     _DOCKERFILE_ENV_PY,
     _DOCKERFILE_INSTANCE_PY,
-)
-from swebench.harness.dockerfiles.php import (
-    _DOCKERFILE_BASE_PHP,
-    _DOCKERFILE_INSTANCE_PHP,
 )
 from swebench.harness.dockerfiles.ruby import (
     _DOCKERFILE_BASE_RUBY,

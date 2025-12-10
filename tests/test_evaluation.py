@@ -1,12 +1,13 @@
 import collections
 import json
+
 import docker
 
 from swebench.harness.constants import (
     FAIL_TO_PASS,
-    PASS_TO_PASS,
     KEY_INSTANCE_ID,
     KEY_MODEL,
+    PASS_TO_PASS,
 )
 from swebench.harness.run_evaluation import make_run_report
 

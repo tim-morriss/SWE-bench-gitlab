@@ -1,13 +1,13 @@
+import ast
 import os
 import re
-import ast
-import chardet
 import subprocess
 from argparse import ArgumentTypeError
-from git import Repo
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import chardet
+from git import Repo
 
 DIFF_PATTERN = re.compile(r"^diff(?:.*)")
 PATCH_PATTERN = re.compile(
@@ -91,7 +91,7 @@ def extract_minimal_patch(model_patch):
     new_patch = ""
     for patch in PATCH_PATTERN.findall(model_patch):
         total_delta = 0
-        diff_header = DIFF_PATTERN.findall(patch)
+        _diff_header = DIFF_PATTERN.findall(patch)
         patch_header = PATCH_FILE_PATTERN.findall(patch)[0]
         if patch_header:
             new_patch += patch_header + "\n"

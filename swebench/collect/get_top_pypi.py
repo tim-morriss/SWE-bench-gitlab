@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
-import os
-import json
 import argparse
+import json
+import os
 
 from bs4 import BeautifulSoup
 from ghapi.core import GhApi
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-
 
 gh_token = os.environ.get("GITHUB_TOKEN")
 if not gh_token:
@@ -71,7 +70,7 @@ def get_package_stats(data_tasks, f):
                     stars_count = int(repo["stargazers_count"])
                     issues = api.issues.list_for_repo(owner, name)
                     pulls_count = int(issues[0]["number"])
-                except:
+                except Exception:
                     pass
 
             # Write to file

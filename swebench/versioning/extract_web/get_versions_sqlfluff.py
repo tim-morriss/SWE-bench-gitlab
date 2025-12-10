@@ -2,6 +2,7 @@ import json
 import os
 import re
 import sys
+
 from ghapi.core import GhApi
 
 sys.path.append("../../harness")
@@ -53,12 +54,12 @@ def process(x):
 version_date_map = {}
 for pair in pairs:
     pair_rv = process(pair[0])
-    if pair_rv[0] == None:
+    if pair_rv[0] is None:
         continue
     version = pair_rv[0]
     if version.startswith("Bugfix Release "):
         version = version[len("Bugfix Release ") :]
-    date = pair[1] if pair_rv[1] == None else pair_rv[1]
+    date = pair[1] if pair_rv[1] is None else pair_rv[1]
     if version in version_date_map:
         version_date_map[version] = max(version_date_map[version], date)
     else:

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import docker
-import docker.errors
 import logging
 import sys
 import traceback
-
 from pathlib import Path
+
+import docker
+import docker.errors
 
 from swebench.harness.constants import (
     BASE_IMAGE_BUILD_DIR,
@@ -17,9 +17,9 @@ from swebench.harness.constants import (
 )
 from swebench.harness.docker_utils import cleanup_container, remove_image
 from swebench.harness.test_spec.test_spec import (
+    TestSpec,
     get_test_specs_from_dataset,
     make_test_spec,
-    TestSpec,
 )
 from swebench.harness.utils import ansi_escape, run_threadpool
 
@@ -243,7 +243,7 @@ def get_env_configs_to_build(
                 base_images[test_spec.base_image_key] = client.images.get(
                     test_spec.base_image_key
                 )
-            base_image = base_images[test_spec.base_image_key]
+            _base_image = base_images[test_spec.base_image_key]
         except docker.errors.ImageNotFound:
             raise Exception(
                 f"Base image {test_spec.base_image_key} not found for {test_spec.env_image_key}\n."
@@ -253,7 +253,7 @@ def get_env_configs_to_build(
         # Check if the environment image exists
         image_exists = False
         try:
-            env_image = client.images.get(test_spec.env_image_key)
+            _env_image = client.images.get(test_spec.env_image_key)
             image_exists = True
         except docker.errors.ImageNotFound:
             pass
@@ -427,7 +427,7 @@ def build_instance_image(
 
     # Check that the env. image the instance image is based on exists
     try:
-        env_image = client.images.get(env_image_name)
+        _env_image = client.images.get(env_image_name)
     except docker.errors.ImageNotFound as e:
         raise BuildImageError(
             test_spec.instance_id,

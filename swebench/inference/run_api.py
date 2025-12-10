@@ -5,25 +5,23 @@ It sorts instances by length and continually writes the outputs to a specified f
 """
 
 import json
+import logging
 import os
 import time
-import dotenv
 import traceback
-from pathlib import Path
-from tqdm.auto import tqdm
-import numpy as np
-import tiktoken
-import openai
-from anthropic import HUMAN_PROMPT, AI_PROMPT, Anthropic
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_random_exponential,
-)
-from datasets import load_dataset, load_from_disk
-from swebench.inference.make_datasets.utils import extract_diff
 from argparse import ArgumentParser
-import logging
+from pathlib import Path
+
+import dotenv
+import numpy as np
+import openai
+import tiktoken
+from anthropic import AI_PROMPT, HUMAN_PROMPT, Anthropic
+from datasets import load_dataset, load_from_disk
+from tenacity import retry, stop_after_attempt, wait_random_exponential
+from tqdm.auto import tqdm
+
+from swebench.inference.make_datasets.utils import extract_diff
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

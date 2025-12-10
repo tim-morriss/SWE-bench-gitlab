@@ -12,9 +12,10 @@ def parse_log_calypso(log: str, test_spec: TestSpec) -> dict[str, str]:
     test_status_map = {}
     suite = []
 
-    get_test_name = lambda suite, match_pattern, line: " - ".join(
-        [" - ".join([x[0] for x in suite]), re.match(match_pattern, line).group(1)]
-    ).strip()
+    def get_test_name(suite, match_pattern, line):
+        return " - ".join(
+            [" - ".join([x[0] for x in suite]), re.match(match_pattern, line).group(1)]
+        ).strip()
 
     for log in log.split(" ./node_modules/.bin/jest ")[1:]:
         for line in log.split("\n"):

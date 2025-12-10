@@ -2,15 +2,39 @@ from enum import Enum
 from pathlib import Path
 from typing import TypedDict
 
-from swebench.harness.constants.c import *
-from swebench.harness.constants.go import *
-from swebench.harness.constants.java import *
-from swebench.harness.constants.javascript import *
-from swebench.harness.constants.php import *
-from swebench.harness.constants.python import *
-from swebench.harness.constants.ruby import *
-from swebench.harness.constants.rust import *
-
+from swebench.harness.constants.c import (
+    MAP_REPO_TO_INSTALL_C,
+    MAP_REPO_VERSION_TO_SPECS_C,
+)
+from swebench.harness.constants.go import (
+    MAP_REPO_TO_INSTALL_GO,
+    MAP_REPO_VERSION_TO_SPECS_GO,
+)
+from swebench.harness.constants.java import (
+    MAP_REPO_TO_INSTALL_JAVA,
+    MAP_REPO_VERSION_TO_SPECS_JAVA,
+)
+from swebench.harness.constants.javascript import (
+    MAP_REPO_TO_INSTALL_JS,
+    MAP_REPO_VERSION_TO_SPECS_JS,
+)
+from swebench.harness.constants.php import (
+    MAP_REPO_TO_INSTALL_PHP,
+    MAP_REPO_VERSION_TO_SPECS_PHP,
+)
+from swebench.harness.constants.python import (
+    MAP_REPO_TO_INSTALL_PY,
+    MAP_REPO_VERSION_TO_SPECS_PY,
+    USE_X86_PY,
+)
+from swebench.harness.constants.ruby import (
+    MAP_REPO_TO_INSTALL_RUBY,
+    MAP_REPO_VERSION_TO_SPECS_RUBY,
+)
+from swebench.harness.constants.rust import (
+    MAP_REPO_TO_INSTALL_RUST,
+    MAP_REPO_VERSION_TO_SPECS_RUST,
+)
 
 # Constants - Evaluation Log Directories
 BASE_IMAGE_BUILD_DIR = Path("logs/build_images/base")

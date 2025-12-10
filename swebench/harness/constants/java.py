@@ -1,5 +1,5 @@
-from typing import List
 import shlex
+from typing import List
 
 
 def make_lombok_pre_install_script(tests: List[str]) -> List[str]:

@@ -1,13 +1,11 @@
 import json
 import re
-
 from pathlib import Path
-from swebench.harness.constants import (
-    END_TEST_OUTPUT,
-    START_TEST_OUTPUT,
-)
-from swebench.harness.test_spec.utils import make_eval_script_list_common
+
 from unidiff import PatchSet
+
+from swebench.harness.constants import END_TEST_OUTPUT, START_TEST_OUTPUT
+from swebench.harness.test_spec.utils import make_eval_script_list_common
 
 
 # MARK: Test Command Creation Functions

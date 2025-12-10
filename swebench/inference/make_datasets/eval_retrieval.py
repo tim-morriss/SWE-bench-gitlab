@@ -2,11 +2,12 @@
 
 """This script can be used to evaluate the BM25 retrieval results for a dataset created with create_text_dataset.py with the --retrieval_file option and --file_source bm25."""
 
-import re
-import numpy as np
-from datasets import load_dataset, disable_caching, load_from_disk
-from argparse import ArgumentParser
 import logging
+import re
+from argparse import ArgumentParser
+
+import numpy as np
+from datasets import disable_caching, load_dataset, load_from_disk
 
 disable_caching()
 logging.basicConfig(
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 def main(dataset_name_or_path, split):
     try:
         dataset = load_from_disk(dataset_name_or_path)[split]
-    except:
+    except Exception:
         dataset = load_dataset(dataset_name_or_path, split=split)
     print(
         f"Evaluating {len(dataset)} instances from {dataset_name_or_path} {split} split"

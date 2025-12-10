@@ -1,8 +1,9 @@
 import re
+
 import requests
+from unidiff import PatchSet
 
 from swebench.collect.utils import PR_KEYWORDS
-from unidiff import PatchSet
 
 
 def contains_git_commit_hash(text: str) -> bool:

@@ -1,9 +1,9 @@
 import json
 import re
-import requests
 import sys
-
 from datetime import datetime
+
+import requests
 
 sys.path.append("/n/fs/nlp-jy1682/swe-bench/public/harness")
 from utils import get_instances
@@ -25,7 +25,8 @@ matches = re.findall(PATTERN, resp.text)
 matches = list(set(matches))
 
 # Get (date, version) pairs
-keep_major_minor = lambda x, sep: ".".join(x.strip().split(sep)[:2])
+def keep_major_minor(x, sep):
+    return ".".join(x.strip().split(sep)[:2])
 
 # Iterate through matches, construct (version, date) pairs
 times = []

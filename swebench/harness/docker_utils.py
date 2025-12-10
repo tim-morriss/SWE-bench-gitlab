@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import docker
-import docker.errors
 import os
 import signal
 import tarfile
@@ -10,6 +8,8 @@ import time
 import traceback
 from pathlib import Path
 
+import docker
+import docker.errors
 from docker.models.containers import Container
 
 HEREDOC_DELIMITER = "EOF_1399519320"  # different from dataset HEREDOC_DELIMITERs!
@@ -70,6 +70,9 @@ def remove_image(client, image_id, logger=None):
         rm_image (bool): Whether to remove the image.
         logger (logging.Logger): Logger to use for output. If None, print to stdout.
     """
+    def _noop_logger(x):
+        pass
+
     if not logger:
         # if logger is None, print to stdout
         log_info = print
@@ -77,8 +80,8 @@ def remove_image(client, image_id, logger=None):
         raise_error = True
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
-        log_info = lambda x: None
-        log_error = lambda x: None
+        log_info = _noop_logger
+        log_error = _noop_logger
         raise_error = True
     else:
         # if logger is a logger object, use it
@@ -112,6 +115,9 @@ def cleanup_container(client, container, logger):
 
     container_id = container.id
 
+    def _noop_logger(x):
+        pass
+
     if not logger:
         # if logger is None, print to stdout
         log_error = print
@@ -119,8 +125,8 @@ def cleanup_container(client, container, logger):
         raise_error = True
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
-        log_info = lambda x: None
-        log_error = lambda x: None
+        log_info = _noop_logger
+        log_error = _noop_logger
         raise_error = True
     else:
         # if logger is a logger object, use it

@@ -8,35 +8,37 @@ specified directory.
 """
 
 import json
-import subprocess
-from pathlib import Path
-from ghapi.all import GhApi
+import logging
 import os
 import re
+import subprocess
 import time
+from argparse import ArgumentParser
 from datetime import datetime
+from pathlib import Path
+
+from ghapi.all import GhApi
 from tqdm.auto import tqdm
-from swebench.inference.make_datasets.utils import (
-    ContextManager,
-    string_to_bool,
-    extract_diff,
-    extract_minimal_patch,
+
+from swebench.inference.make_datasets.bm25_retrieval import (
+    DOCUMENT_ENCODING_FUNCTIONS,
+    clone_repo,
+    make_index,
+    search,
 )
 from swebench.inference.make_datasets.create_instance import (
     PROMPT_FUNCTIONS,
     TOKENIZER_FUNCS,
-    make_code_text,
     ingest_files,
+    make_code_text,
 )
-from swebench.inference.make_datasets.bm25_retrieval import (
-    make_index,
-    clone_repo,
-    search,
-    DOCUMENT_ENCODING_FUNCTIONS,
+from swebench.inference.make_datasets.utils import (
+    ContextManager,
+    extract_diff,
+    extract_minimal_patch,
+    string_to_bool,
 )
-from swebench.inference.run_api import call_chat, call_anthropic
-import logging
-from argparse import ArgumentParser
+from swebench.inference.run_api import call_anthropic, call_chat
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -104,7 +106,7 @@ def make_instance(
     Returns:
         dict: The instance.
     """
-    thread_id = 0
+    _thread_id = 0
     instance = {"instance_id": instance_id, "problem_statement": query}
     logger.info(f"Cloning repo {owner}/{repo}")
     repo_dir = clone_repo(f"{owner}/{repo}", root_dir, token)

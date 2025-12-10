@@ -5,9 +5,9 @@
 # to "dropped container output" logs that interfere with parsing the test output. Instead,
 # we mount and run this script in the Sandbox to control the rate at which stdio is streamed to
 # the container.
+import argparse
 import asyncio
 import sys
-import argparse
 
 # 64 KiB // 2 to be safe
 STDIO_RATE_LIMIT_BYTES_PER_SEC = 64 * 1024 // 2

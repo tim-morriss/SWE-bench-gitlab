@@ -1,10 +1,10 @@
 import json
 import os
 import re
-import requests
 import sys
-
 from datetime import datetime
+
+import requests
 
 sys.path.append("../../harness")
 from utils import get_instances
@@ -25,7 +25,8 @@ matches = [x[1:] for x in matches]
 
 # Get (date, version) pairs
 date_formats = ["%B %d %Y", "%d %B %Y"]
-keep_major_minor = lambda x, sep: ".".join(x.strip().split(sep)[:2])
+def keep_major_minor(x, sep):
+    return ".".join(x.strip().split(sep)[:2])
 
 times = []
 for match in matches:
@@ -37,7 +38,7 @@ for match in matches:
         try:
             date_obj = datetime.strptime(date_str, f_)
             times.append((date_obj.strftime("%Y-%m-%d"), version))
-        except:
+        except ValueError:
             continue
         break
 

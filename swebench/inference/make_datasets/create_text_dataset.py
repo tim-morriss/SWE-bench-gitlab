@@ -9,12 +9,13 @@ import logging
 import os
 from argparse import ArgumentParser
 from pathlib import Path
+
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
 from tqdm.auto import tqdm
 
 from swebench.inference.make_datasets.create_instance import (
-    add_text_inputs,
     PROMPT_FUNCTIONS,
+    add_text_inputs,
 )
 from swebench.inference.make_datasets.tokenize_dataset import TOKENIZER_FUNCS
 
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_jsonl_file(filename):
-    if type(filename) == str:
+    if isinstance(filename, str):
         filename = Path(filename)
     if filename.name.endswith(".jsonl") or filename.name.endswith(".jsonl.all"):
         with open(filename) as f:
@@ -83,16 +84,18 @@ def validate_arguments(
     if push_to_hub_user is None and not Path(output_dir).exists():
         Path(output_dir).mkdir(parents=True)
     if max_context_len is not None:
-        assert file_source not in {"all", "oracle"}, (
-            "Cannot use max_context_len with oracle or all file sources"
-        )
+        assert file_source not in {
+            "all",
+            "oracle",
+        }, "Cannot use max_context_len with oracle or all file sources"
         assert tokenizer_name is not None, (
             "Must provide tokenizer_name if max_context_len is not None"
         )
     if k is not None:
-        assert file_source not in {"all", "oracle"}, (
-            "Cannot use max_context_len with oracle or all file sources"
-        )
+        assert file_source not in {
+            "all",
+            "oracle",
+        }, "Cannot use max_context_len with oracle or all file sources"
     return hub_token if push_to_hub_user is not None else None
 
 

@@ -1,18 +1,18 @@
 [build-system]
-requires = ['setuptools>=42']
-build-backend = 'setuptools.build_meta'
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
+[tool.poetry]
 name = "swebench"
-dynamic = ["version"]
-authors = [
-    {name = "SWE-bench team", email = "support@swebench.com"},
-]
+version = "4.2.0"
 description = "The official SWE-bench package - a benchmark for evaluating LMs on software engineering"
+authors = ["SWE-bench team <support@swebench.com>"]
 readme = "README.md"
-requires-python = ">=3.10"
+license = "MIT"
+homepage = "https://swebench.com"
+repository = "http://github.com/swe-bench/SWE-bench"
+documentation = "https://github.com/swe-bench/SWE-bench"
 keywords = ["nlp", "benchmark", "code"]
-license = {file = "LICENSE"}
 classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -20,74 +20,81 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-    "beautifulsoup4",
-    "chardet",
-    "datasets",
-    "docker",
-    "ghapi",
-    "GitPython",
-    "modal",
-    "pre-commit",
-    "python-dotenv",
-    "requests",
-    "rich",
-    "tenacity",
-    "tqdm",
-    "unidiff",
-]
 
-[project.optional-dependencies]
-datasets = [
-    "protobuf",
-    "sentencepiece",
-    "tiktoken",
-    "transformers",
-    "openai",
-    "anthropic",
-    "jedi",
-]
-inference = [
-    "torch>=2.0.0",
-    "anthropic",
-    "jedi",
-    "openai",
-    "peft",
-    "protobuf",
-    "sentencepiece",
-    "tiktoken",
-    "transformers",
-    "triton",
-    "flash_attn>=2.0.0",
-    "requests",
-]
-test = [
-    "pytest",
-    "pytest-cov",
-]
-docs = [
-    "mkdocs",
-    "mkdocs-material",
-    "mkdocs-glightbox",
-    "mkdocstrings",
-    "mkdocstrings-python",
-    "mike",
-    "pymdown-extensions",
-    "mkdocs-include-markdown-plugin",
-]
-
-[tool.setuptools]
-include-package-data = true
-
-[tool.setuptools.dynamic]
-version = {attr = "swebench.__version__"}
-
-[tool.setuptools.packages.find]
-where = ["."]
-namespaces = false
-
-[project.urls]
+[tool.poetry.urls]
 "Documentation" = "https://github.com/swe-bench/SWE-bench"
 "Bug Reports" = "http://github.com/swe-bench/SWE-bench/issues"
 "Source Code" = "http://github.com/swe-bench/SWE-bench"
 "Website" = "https://swebench.com"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+beautifulsoup4 = "*"
+chardet = "*"
+datasets = "*"
+docker = "*"
+ghapi = "*"
+GitPython = "*"
+modal = "*"
+pre-commit = "*"
+python-dotenv = "*"
+python-gitlab = "^4.0.0"
+requests = "*"
+rich = "*"
+tenacity = "*"
+tqdm = "*"
+unidiff = "*"
+
+[tool.poetry.group.datasets]
+optional = true
+
+[tool.poetry.group.datasets.dependencies]
+protobuf = "*"
+sentencepiece = "*"
+tiktoken = "*"
+transformers = "*"
+openai = "*"
+anthropic = "*"
+jedi = "*"
+
+[tool.poetry.group.inference]
+optional = true
+
+[tool.poetry.group.inference.dependencies]
+torch = "^2.0.0"
+anthropic = "*"
+jedi = "*"
+openai = "*"
+peft = "*"
+protobuf = "*"
+sentencepiece = "*"
+tiktoken = "*"
+transformers = "*"
+triton = "*"
+flash-attn = ">=2.0.0"
+requests = "*"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = "*"
+pytest-cov = "*"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "*"
+mkdocs-material = "*"
+mkdocs-glightbox = "*"
+mkdocstrings = "*"
+mkdocstrings-python = "*"
+mike = "*"
+pymdown-extensions = "*"
+mkdocs-include-markdown-plugin = "*"
+
+
+[tool.poetry.group.lint.dependencies]
+ruff = "^0.14.8"
+

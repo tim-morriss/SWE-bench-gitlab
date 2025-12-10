@@ -3,13 +3,12 @@
 
 # DeepSpeed Team
 
-import torch
-
 from typing import Any
+
+import torch
+import torch.distributed as dist
 from torch import Tensor
 from torch.nn import Module
-
-import torch.distributed as dist
 
 
 class SeqAllToAll(torch.autograd.Function):

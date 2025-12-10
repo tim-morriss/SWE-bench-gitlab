@@ -1,22 +1,23 @@
 import os
 import posixpath
 import re
+from functools import cache
+
 import requests
 
 from swebench.harness.constants import (
-    SWEbenchInstance,
+    END_TEST_OUTPUT,
     MAP_REPO_TO_ENV_YML_PATHS,
     MAP_REPO_TO_INSTALL,
     MAP_REPO_TO_REQS_PATHS,
     MAP_REPO_VERSION_TO_SPECS,
     NON_TEST_EXTS,
-    SWE_BENCH_URL_RAW,
-    START_TEST_OUTPUT,
-    END_TEST_OUTPUT,
     REPO_BASE_COMMIT_BRANCH,
+    START_TEST_OUTPUT,
+    SWE_BENCH_URL_RAW,
+    SWEbenchInstance,
 )
 from swebench.harness.utils import get_modified_files, load_cached_environment_yml
-from functools import cache
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36"
@@ -72,7 +73,7 @@ def clean_environment_yml(yml_text: str) -> str:
     pip_match = re.search(r"^(\s*-\s*pip\s*:\s*\n)", yml_text, flags=re.MULTILINE)
     if not pip_match:
         return yml_text
-    pip_line_start = pip_match.start()
+    _pip_line_start = pip_match.start()
     # get indentation level of pip line
     pip_indent = len(pip_match.group(1)) - len(pip_match.group(1).lstrip())
     pip_content_start = pip_match.end()
@@ -87,7 +88,7 @@ def clean_environment_yml(yml_text: str) -> str:
         if line_indent <= pip_indent:
             # +1 to account for the newline
             pip_section_end = pip_content_start + sum(
-                len(l) + 1 for l in lines_after_pip[:ix]
+                len(line_text) + 1 for line_text in lines_after_pip[:ix]
             )
             break
     else:
@@ -96,7 +97,7 @@ def clean_environment_yml(yml_text: str) -> str:
     pip_portion = yml_text[pip_content_start:pip_section_end]
     suffix = yml_text[pip_section_end:]
     for pkg_to_replace, replacement in REPLACE_REQ_PACKAGES:
-        if replacement == None:
+        if replacement is None:
             pip_portion = re.sub(
                 rf"^(\s*-\s*){re.escape(pkg_to_replace)}([<>~]=?.*|$)\n?",
                 "",
@@ -150,9 +151,11 @@ def get_requirements_by_commit(repo: str, commit: str) -> str:
     original_req = []
     additional_reqs = []
     req_dir = "/".join(req_path.split("/")[:-1])
-    exclude_line = lambda line: any(
-        [line.strip().startswith(x) for x in ["-e .", "#", ".[test"]]
-    )
+
+    def exclude_line(line):
+        return any(
+            [line.strip().startswith(x) for x in ["-e .", "#", ".[test"]]
+        )
 
     for line in lines.split("\n"):
         if line.strip().startswith("-r"):
@@ -188,7 +191,7 @@ def clean_requirements(requirements_text: str) -> str:
     E.g. types-pkg_resources has been yanked from PyPI, so we replace it with types-setuptools
     """
     for pkg_to_replace, replacement in REPLACE_REQ_PACKAGES:
-        if replacement == None:
+        if replacement is None:
             requirements_text = re.sub(
                 rf"^{re.escape(pkg_to_replace)}([<>=!~]=?.*|$)\n?",
                 "",

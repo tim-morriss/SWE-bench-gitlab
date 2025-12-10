@@ -6,14 +6,11 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-from datasets import load_from_disk, load_dataset
+from datasets import load_dataset, load_from_disk
 from peft import PeftConfig, PeftModel
 from tqdm.auto import tqdm
-from transformers import (
-    LlamaTokenizer,
-    StoppingCriteria,
-    StoppingCriteriaList,
-)
+from transformers import LlamaTokenizer, StoppingCriteria, StoppingCriteriaList
+
 from swebench.inference.llamao.modeling_flash_llama import (
     LlamaForCausalLM as AutoModelForCausalLM,
 )
@@ -198,9 +195,9 @@ def load_data(
     else:
         dataset = load_dataset(dataset_path)[split]
     if peft_path is not None:
-        model_nickname = "__".join(peft_path.split("/")[-2:])
+        _model_nickname = "__".join(peft_path.split("/")[-2:])
     else:
-        model_nickname = "__".join(model_name_or_path.split("/")[-2:])
+        _model_nickname = "__".join(model_name_or_path.split("/")[-2:])
     if "input_ids" not in dataset.column_names:
         dataset = dataset.map(
             lambda x: tokenizer(x["text"], truncation=False),
@@ -214,11 +211,14 @@ def load_data(
         )
     filter_func = None
     if min_len is not None and max_len is None:
-        filter_func = lambda x: x >= min_len
+        def filter_func(x):
+            return x >= min_len
     elif min_len is None and max_len is not None:
-        filter_func = lambda x: x < max_len
+        def filter_func(x):
+            return x < max_len
     elif min_len is not None and max_len is not None:
-        filter_func = lambda x: min_len <= x < max_len
+        def filter_func(x):
+            return min_len <= x < max_len
     if filter_func is not None:
         dataset = dataset.filter(
             lambda x: filter_func(len(x["input_ids"])), desc="filtering for length"

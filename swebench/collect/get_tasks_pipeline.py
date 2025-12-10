@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 
-"""Script to collect pull requests and convert them to candidate task instances"""
+"""Script to collect pull requests/merge requests and convert them to candidate task instances.
+
+Supports both GitHub and GitLab repositories.
+"""
 
 import argparse
 import os
 import traceback
+from multiprocessing import Pool
 
 from dotenv import load_dotenv
-from multiprocessing import Pool
-from swebench.collect.build_dataset import main as build_dataset
-from swebench.collect.print_pulls import main as print_pulls
 
+from swebench.collect.build_dataset import main as build_dataset
+from swebench.collect.platform_client import detect_platform
+from swebench.collect.print_pulls import main as print_pulls
 
 load_dotenv()
 
@@ -40,45 +44,80 @@ def split_instances(input_list: list, n: int) -> list:
 
 def construct_data_files(data: dict):
     """
-    Logic for combining multiple .all PR files into a single fine tuning dataset
+    Logic for collecting PR/MR data and converting to task instances
 
     Args:
         data (dict): Dictionary containing the following keys:
-            repos (list): List of repositories to retrieve instruction data for
-            path_prs (str): Path to save PR data files to
+            repos (list): List of repositories to retrieve data for
+            path_prs (str): Path to save PR/MR data files to
             path_tasks (str): Path to save task instance data files to
-            token (str): GitHub token to use for API requests
+            github_token (str): GitHub token to use for API requests
+            gitlab_token (str): GitLab token to use for API requests
+            gitlab_url (str): GitLab instance URL
+            max_pulls (int): Maximum number of PRs/MRs to fetch
+            cutoff_date (str): Cutoff date for PRs/MRs
     """
-    repos, path_prs, path_tasks, max_pulls, cutoff_date, token = (
-        data["repos"],
-        data["path_prs"],
-        data["path_tasks"],
-        data["max_pulls"],
-        data["cutoff_date"],
-        data["token"],
-    )
+    repos = data["repos"]
+    path_prs = data["path_prs"]
+    path_tasks = data["path_tasks"]
+    max_pulls = data["max_pulls"]
+    cutoff_date = data["cutoff_date"]
+    github_token = data["github_token"]
+    gitlab_token = data["gitlab_token"]
+    gitlab_url = data["gitlab_url"]
+
     for repo in repos:
         repo = repo.strip(",").strip()
-        repo_name = repo.split("/")[1]
+
+        # Detect platform for this repo
+        platform = detect_platform(repo)
+        print(f"📍 Detected platform for {repo}: {platform}")
+
+        # Get appropriate token
+        token = gitlab_token if platform == "gitlab" else github_token
+
+        # Generate safe filename (replace / with __)
+        repo_name_safe = repo.replace("/", "__")
+
         try:
-            path_pr = os.path.join(path_prs, f"{repo_name}-prs.jsonl")
+            # Path for PR/MR data
+            path_pr = os.path.join(path_prs, f"{repo_name_safe}-prs.jsonl")
             if cutoff_date:
                 path_pr = path_pr.replace(".jsonl", f"-{cutoff_date}.jsonl")
+
+            # Collect PR/MR data
             if not os.path.exists(path_pr):
-                print(f"Pull request data for {repo} not found, creating...")
+                print(f"Pull request/MR data for {repo} not found, creating...")
                 print_pulls(
-                    repo, path_pr, token, max_pulls=max_pulls, cutoff_date=cutoff_date
+                    repo_name=repo,
+                    output=path_pr,
+                    token=token,
+                    max_pulls=max_pulls,
+                    cutoff_date=cutoff_date,
+                    platform=platform,
+                    gitlab_url=gitlab_url,
                 )
-                print(f"✅ Successfully saved PR data for {repo} to {path_pr}")
+                print(f"✅ Successfully saved PR/MR data for {repo} to {path_pr}")
             else:
                 print(
-                    f"📁 Pull request data for {repo} already exists at {path_pr}, skipping..."
+                    f"📁 Pull request/MR data for {repo} already exists at {path_pr}, skipping..."
                 )
 
-            path_task = os.path.join(path_tasks, f"{repo_name}-task-instances.jsonl")
+            # Path for task instances
+            path_task = os.path.join(
+                path_tasks, f"{repo_name_safe}-task-instances.jsonl"
+            )
+
+            # Build task instances
             if not os.path.exists(path_task):
                 print(f"Task instance data for {repo} not found, creating...")
-                build_dataset(path_pr, path_task, token)
+                build_dataset(
+                    pr_file=path_pr,
+                    output=path_task,
+                    token=token,
+                    platform=platform,
+                    gitlab_url=gitlab_url,
+                )
                 print(
                     f"✅ Successfully saved task instance data for {repo} to {path_task}"
                 )
@@ -100,42 +139,88 @@ def main(
     path_tasks: str,
     max_pulls: int = None,
     cutoff_date: str = None,
+    gitlab_url: str = "https://gitlab.com",
 ):
     """
-    Spawns multiple threads given multiple GitHub tokens for collecting fine tuning data
+    Spawns multiple threads for collecting PR/MR data from GitHub and/or GitLab
+
+    Supports mixed repositories (both GitHub and GitLab). Platform is detected automatically
+    for each repository.
 
     Args:
-        repos (list): List of repositories to retrieve instruction data for
-        path_prs (str): Path to save PR data files to
+        repos (list): List of repositories (GitHub: owner/repo, GitLab: group/project)
+        path_prs (str): Path to save PR/MR data files to
         path_tasks (str): Path to save task instance data files to
-        cutoff_date (str): Cutoff date for PRs to consider in format YYYYMMDD
+        max_pulls (int): Maximum number of PRs/MRs to fetch per repo
+        cutoff_date (str): Cutoff date for PRs/MRs in format YYYYMMDD
+        gitlab_url (str): GitLab instance URL (default: https://gitlab.com)
     """
     path_prs, path_tasks = os.path.abspath(path_prs), os.path.abspath(path_tasks)
-    print(f"Will save PR data to {path_prs}")
+    print(f"Will save PR/MR data to {path_prs}")
     print(f"Will save task instance data to {path_tasks}")
     print(f"Received following repos to create task instances for: {repos}")
 
-    tokens = os.getenv("GITHUB_TOKENS")
-    if not tokens:
-        raise Exception(
-            "Missing GITHUB_TOKENS, consider rerunning with GITHUB_TOKENS=$(gh auth token)"
-        )
-    tokens = tokens.split(",")
-    data_task_lists = split_instances(repos, len(tokens))
+    # Get GitHub tokens
+    github_tokens = os.getenv("GITHUB_TOKENS")
+    if not github_tokens:
+        github_token = os.getenv("GITHUB_TOKEN")
+        if github_token:
+            github_tokens = github_token
+            print("⚠️  Using single GITHUB_TOKEN (no parallelization for GitHub repos)")
+        else:
+            print(
+                "⚠️  No GITHUB_TOKEN found. GitHub repos will fail without authentication."
+            )
+            github_tokens = ""
 
+    # Get GitLab tokens
+    gitlab_tokens = os.getenv("GITLAB_TOKENS")
+    if not gitlab_tokens:
+        gitlab_token = os.getenv("GITLAB_TOKEN")
+        if gitlab_token:
+            gitlab_tokens = gitlab_token
+            print("⚠️  Using single GITLAB_TOKEN (no parallelization for GitLab repos)")
+        else:
+            print("⚠️  No GITLAB_TOKEN found. GitLab repos may be rate-limited.")
+            gitlab_tokens = ""
+
+    # Split into token lists for parallelization
+    github_token_list = [t.strip() for t in github_tokens.split(",") if t.strip()]
+    gitlab_token_list = [t.strip() for t in gitlab_tokens.split(",") if t.strip()]
+
+    # Use max number of tokens for parallelization
+    num_workers = max(len(github_token_list), len(gitlab_token_list), 1)
+
+    # Pad token lists to match worker count
+    while len(github_token_list) < num_workers:
+        github_token_list.append(github_token_list[0] if github_token_list else "")
+    while len(gitlab_token_list) < num_workers:
+        gitlab_token_list.append(gitlab_token_list[0] if gitlab_token_list else "")
+
+    # Split repos among workers
+    data_task_lists = split_instances(repos, num_workers)
+
+    # Create data for each worker
     data_pooled = [
         {
-            "repos": repos,
+            "repos": repo_list,
             "path_prs": path_prs,
             "path_tasks": path_tasks,
             "max_pulls": max_pulls,
             "cutoff_date": cutoff_date,
-            "token": token,
+            "github_token": gh_token,
+            "gitlab_token": gl_token,
+            "gitlab_url": gitlab_url,
         }
-        for repos, token in zip(data_task_lists, tokens)
+        for repo_list, gh_token, gl_token in zip(
+            data_task_lists, github_token_list, gitlab_token_list
+        )
     ]
 
-    with Pool(len(tokens)) as p:
+    print(f"🚀 Starting {num_workers} worker(s) for parallel processing")
+
+    # Run in parallel
+    with Pool(num_workers) as p:
         p.map(construct_data_files, data_pooled)
 
 
@@ -162,6 +247,12 @@ if __name__ == "__main__":
         type=str,
         help="Cutoff date for PRs to consider in format YYYYMMDD",
         default=None,
+    )
+    parser.add_argument(
+        "--gitlab_url",
+        type=str,
+        help="GitLab instance URL (default: https://gitlab.com)",
+        default="https://gitlab.com",
     )
     args = parser.parse_args()
     main(**vars(args))

@@ -18,16 +18,16 @@
 # limitations under the License.
 """PyTorch LLaMA model."""
 
-from typing import Optional, Union, Any
+from typing import Any, Optional, Union
 
 import torch
+import torch.distributed as dist
 import torch.nn.functional as F
 import torch.utils.checkpoint
+from flash_attn import flash_attn_kvpacked_func, flash_attn_varlen_kvpacked_func
+from flash_attn.bert_padding import pad_input, unpad_input
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
-
-import torch.distributed as dist
-
 from transformers import GenerationMixin
 from transformers.activations import ACT2FN
 from transformers.modeling_outputs import (
@@ -36,12 +36,10 @@ from transformers.modeling_outputs import (
     SequenceClassifierOutputWithPast,
 )
 from transformers.modeling_utils import PreTrainedModel
-from transformers.utils import logging
 from transformers.models.llama.configuration_llama import LlamaConfig
+from transformers.utils import logging
 
 from swebench.inference.llamao.distributed_attention import DistributedAttention
-from flash_attn import flash_attn_kvpacked_func, flash_attn_varlen_kvpacked_func
-from flash_attn.bert_padding import unpad_input, pad_input
 
 try:
     from flash_attn.layers.rotary import apply_rotary_emb_func

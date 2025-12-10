@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-
 import logging
 import re
-import requests
 import time
+import warnings
+from typing import Callable, Iterator, Optional, Union
 
+import requests
 from bs4 import BeautifulSoup
+from fastcore.net import HTTP403ForbiddenError, HTTP404NotFoundError
 from ghapi.core import GhApi
-from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError
-from typing import Callable, Iterator, Optional
 from unidiff import PatchSet
+
+from swebench.collect.github_client import GitHubClient
+from swebench.collect.gitlab_client import GitLabClient
+from swebench.collect.platform_client import PlatformClient, detect_platform
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -31,7 +35,48 @@ PR_KEYWORDS = {
 }
 
 
+def create_client(
+    repo_identifier: str,
+    token: Optional[str] = None,
+    platform: Optional[str] = None,
+    gitlab_url: str = "https://gitlab.com",
+) -> PlatformClient:
+    """
+    Create a platform client (GitHub or GitLab) based on the repository identifier.
+
+    Args:
+        repo_identifier: Repository string (e.g., "owner/repo" or "group/project")
+        token: API token (GITHUB_TOKEN or GITLAB_TOKEN)
+        platform: Explicit platform ('github' or 'gitlab'). If None, auto-detects.
+        gitlab_url: GitLab instance URL (only used for GitLab)
+
+    Returns:
+        PlatformClient instance (GitHubClient or GitLabClient)
+    """
+    # Detect platform if not explicitly specified
+    if platform is None:
+        platform = detect_platform(repo_identifier)
+
+    if platform == "gitlab":
+        return GitLabClient(repo_identifier, token=token, gitlab_url=gitlab_url)
+    else:
+        # GitHub: split into owner/name
+        parts = repo_identifier.split("/")
+        if len(parts) != 2:
+            raise ValueError(
+                f"Invalid GitHub repo format: {repo_identifier}. Expected 'owner/repo'"
+            )
+        owner, name = parts
+        return GitHubClient(owner, name, token=token)
+
+
 class Repo:
+    """
+    DEPRECATED: Use create_client() and PlatformClient instead.
+
+    This class is kept for backward compatibility but will be removed in a future version.
+    """
+
     def __init__(self, owner: str, name: str, token: Optional[str] = None):
         """
         Init to retrieve target repository and create ghapi tool
@@ -41,6 +86,11 @@ class Repo:
             name (str): name of target repository
             token (str): github token
         """
+        warnings.warn(
+            "Repo class is deprecated. Use create_client() with PlatformClient instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.owner = owner
         self.name = name
         self.token = token
@@ -232,90 +282,207 @@ class Repo:
         return pulls
 
 
-def extract_problem_statement_and_hints(pull: dict, repo: Repo) -> tuple[str, str]:
+def extract_problem_statement_and_hints(
+    pull: dict, repo: Union[Repo, PlatformClient]
+) -> tuple[str, str]:
     """
     Extract problem statement from issues associated with a pull request
 
     Args:
-        pull (dict): PR dictionary object from GitHub
-        repo (Repo): Repo object
+        pull (dict): PR dictionary object from GitHub/GitLab
+        repo: Repo object (deprecated) or PlatformClient instance
     Return:
         text (str): problem statement
         hints (str): hints
     """
-    if repo.name == "django":
+    # Handle Django special case (GitHub only)
+    repo_name = (
+        repo.name if isinstance(repo, Repo) else repo.project_path.split("/")[-1]
+    )
+    if repo_name == "django" and isinstance(repo, (Repo, GitHubClient)):
         return extract_problem_statement_and_hints_django(pull, repo)
+
     text = ""
     all_hint_texts = list()
-    for issue_number in pull["resolved_issues"]:
-        issue = repo.call_api(
-            repo.api.issues.get,
-            owner=repo.owner,
-            repo=repo.name,
-            issue_number=issue_number,
+
+    # Check if we have issue_references with project info (GitLab cross-project support)
+    issue_references = pull.get("issue_references", [])
+    if not issue_references and "resolved_issues" in pull:
+        # Fallback: create references from resolved_issues (assume same project)
+        current_project = (
+            repo.project_path
+            if isinstance(repo, GitLabClient)
+            else f"{repo.owner}/{repo.name}"
+            if isinstance(repo, Repo)
+            else None
         )
+        issue_references = [
+            {"number": num, "project": current_project}
+            for num in pull["resolved_issues"]
+        ]
+
+    # Cache for cross-project clients
+    cross_project_clients = {}
+
+    for issue_ref in issue_references:
+        issue_number = (
+            issue_ref.get("number") if isinstance(issue_ref, dict) else issue_ref
+        )
+        issue_project = (
+            issue_ref.get("project") if isinstance(issue_ref, dict) else None
+        )
+
+        # Determine which client to use
+        issue_client = repo
+        if (
+            isinstance(repo, GitLabClient)
+            and issue_project
+            and issue_project != repo.project_path
+        ):
+            # Cross-project issue - need different client
+            if issue_project not in cross_project_clients:
+                logger.info(
+                    f"[{repo.project_path}] Creating client for cross-project issue in {issue_project}"
+                )
+                try:
+                    cross_project_clients[issue_project] = GitLabClient(
+                        issue_project, token=repo.token, gitlab_url=repo.gitlab_url
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"[{repo.project_path}] Failed to create client for {issue_project}: {e}"
+                    )
+                    continue
+            issue_client = cross_project_clients[issue_project]
+
+        # Fetch issue using appropriate client
+        if isinstance(repo, Repo):
+            # Old Repo class
+            issue = repo.call_api(
+                repo.api.issues.get,
+                owner=repo.owner,
+                repo=repo.name,
+                issue_number=issue_number,
+            )
+        else:
+            # New PlatformClient
+            issue = issue_client.get_issue(int(issue_number))
+
         if issue is None:
+            logger.warning(
+                f"[{repo.project_path}] Issue #{issue_number} not found in {issue_project or 'same project'}"
+            )
             continue
-        title = issue.title if issue.title else ""
-        body = issue.body if issue.body else ""
+
+        # Handle different response formats
+        if isinstance(repo, Repo):
+            title = issue.title if issue.title else ""
+            body = issue.body if issue.body else ""
+            issue_num = issue.number
+        else:
+            title = issue.get("title", "")
+            body = issue.get("body", "")
+            issue_num = issue.get("number")
+
         text += f"{title}\n{body}\n"
-        issue_number = issue.number
-        hint_texts = _extract_hints(pull, repo, issue_number)
+
+        # Extract hints using the same client (cross-project or not)
+        hint_texts = _extract_hints(pull, issue_client, issue_num)
         hint_text = "\n".join(hint_texts)
         all_hint_texts.append(hint_text)
+
     return text, "\n".join(all_hint_texts) if all_hint_texts else ""
 
 
-def _extract_hints(pull: dict, repo: Repo, issue_number: int) -> list[str]:
+def _extract_hints(
+    pull: dict, repo: Union[Repo, PlatformClient], issue_number: int
+) -> list[str]:
     """
     Extract hints from comments associated with a pull request (before first commit)
 
     Args:
-        pull (dict): PR dictionary object from GitHub
-        repo (Repo): Repo object
+        pull (dict): PR dictionary object from GitHub/GitLab
+        repo: Repo object (deprecated) or PlatformClient instance
         issue_number (int): issue number
     Return:
         hints (list): list of hints
     """
     # Get all commits in PR
-    commits = repo.get_all_loop(
-        repo.api.pulls.list_commits, pull_number=pull["number"], quiet=True
-    )
-    commits = list(commits)
+    if isinstance(repo, Repo):
+        commits = list(
+            repo.get_all_loop(
+                repo.api.pulls.list_commits, pull_number=pull["number"], quiet=True
+            )
+        )
+    else:
+        commits = repo.get_pull_commits(pull["number"])
     if len(commits) == 0:
         # If there are no comments, return no hints
         return []
+
     # Get time of first commit in PR
-    commit_time = commits[0].commit.author.date  # str
-    commit_time = time.mktime(time.strptime(commit_time, "%Y-%m-%dT%H:%M:%SZ"))
+    if isinstance(repo, Repo):
+        commit_time_str = commits[0].commit.author.date
+    else:
+        # New PlatformClient returns dicts
+        commit_time_str = commits[0]["commit"]["author"]["date"]
+
+    # Parse timestamp - handle both Z (UTC) and timezone offset formats
+    try:
+        commit_time = time.mktime(time.strptime(commit_time_str, "%Y-%m-%dT%H:%M:%SZ"))
+    except ValueError:
+        # Try ISO 8601 format with timezone (GitLab format)
+        from datetime import datetime
+
+        dt = datetime.fromisoformat(commit_time_str.replace("Z", "+00:00"))
+        commit_time = dt.timestamp()
+
     # Get all comments in PR
-    all_comments = repo.get_all_loop(
-        repo.api.issues.list_comments, issue_number=issue_number, quiet=True
-    )
-    all_comments = list(all_comments)
+    if isinstance(repo, Repo):
+        all_comments = list(
+            repo.get_all_loop(
+                repo.api.issues.list_comments, issue_number=issue_number, quiet=True
+            )
+        )
+    else:
+        all_comments = repo.get_issue_comments(issue_number)
     # Iterate through all comments, only keep comments created before first commit
     comments = list()
     for comment in all_comments:
-        comment_time = time.mktime(
-            time.strptime(comment.updated_at, "%Y-%m-%dT%H:%M:%SZ")
-        )  # use updated_at instead of created_at
+        if isinstance(repo, Repo):
+            comment_time_str = comment.updated_at
+            comment_body = comment.body
+        else:
+            # New PlatformClient returns dicts
+            comment_time_str = comment.get("updated_at", comment.get("created_at"))
+            comment_body = comment.get("body", "")
+
+        # Parse timestamp - handle both Z (UTC) and timezone offset formats
+        try:
+            comment_time = time.mktime(
+                time.strptime(comment_time_str, "%Y-%m-%dT%H:%M:%SZ")
+            )
+        except ValueError:
+            # Try ISO 8601 format with timezone (GitLab format)
+            from datetime import datetime
+
+            dt = datetime.fromisoformat(comment_time_str.replace("Z", "+00:00"))
+            comment_time = dt.timestamp()
         if comment_time < commit_time:
-            comments.append(comment)
+            comments.append(comment_body)
         else:
             break
         # only include information available before the first commit was created
-    # Keep text from comments
-    comments = [comment.body for comment in comments]
     return comments
 
 
-def extract_patches(pull: dict, repo: Repo) -> tuple[str, str]:
+def extract_patches(pull: dict, repo: Union[Repo, PlatformClient]) -> tuple[str, str]:
     """
     Get patch and test patch from PR
 
     Args:
-        pull (dict): PR dictionary object from GitHub
-        repo (Repo): Repo object
+        pull (dict): PR dictionary object from GitHub/GitLab
+        repo: Repo object (deprecated) or PlatformClient instance
     Return:
         patch_change_str (str): gold patch
         patch_test_str (str): test patch

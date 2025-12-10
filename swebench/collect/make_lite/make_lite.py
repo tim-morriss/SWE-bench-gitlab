@@ -9,7 +9,7 @@ from criteria import (
     leq_n_hunks,
     leq_n_words,
 )
-from datasets import load_dataset, disable_caching, DatasetDict
+from datasets import DatasetDict, disable_caching, load_dataset
 
 disable_caching()
 

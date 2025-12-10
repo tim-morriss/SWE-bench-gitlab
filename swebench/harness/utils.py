@@ -1,23 +1,24 @@
 import json
 import re
-import requests
 import traceback
-from importlib import resources
-import swebench.resources
-
 from argparse import ArgumentTypeError
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datasets import Dataset, load_dataset, load_from_disk
-from dotenv import load_dotenv
+from importlib import resources
 from pathlib import Path
 from typing import cast
+
+import requests
+from datasets import Dataset, load_dataset, load_from_disk
+from dotenv import load_dotenv
+from unidiff import PatchSet
+
+import swebench.resources
 from swebench.harness.constants import (
-    SWEbenchInstance,
     KEY_INSTANCE_ID,
     KEY_MODEL,
     KEY_PREDICTION,
+    SWEbenchInstance,
 )
-from unidiff import PatchSet
 
 load_dotenv()
 
@@ -327,7 +328,7 @@ def get_repo_file(repo, commit, filepath):
         if response.status_code == 200:
             return response.text
         return None
-    except:
+    except Exception:
         return None
 
 

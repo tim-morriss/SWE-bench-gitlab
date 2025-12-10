@@ -4,6 +4,54 @@ All notable changes to the PyPI package for SWE-bench ([`swebench`](https://pypi
 
 Prior to version 1.1.0, not all deployed versions are listed, as the PyPI package was going through development and testing. The noteworthy versions and the respective changes that were introduced by that version are included. All versions 1.1.0 onwards are fully listed.
 
+## [4.2.0] - 12/09/2024
+### Major Features
+* **GitLab Support**: Full support for GitLab.com and self-hosted GitLab instances
+  * Collect task instances from GitLab merge requests (MRs)
+  * Support for nested group structures (e.g., `group/subgroup/project`)
+  * Cross-project issue references (MR in project A can reference issue in project B)
+  * GitLab-specific issue resolution keywords (Closes, Fixes, Resolves, Implements, Relates, Addresses, References, etc.)
+  * Automatic platform detection based on repository format
+  * Mixed GitHub/GitLab dataset support
+* **Poetry Migration**: Migrated from setuptools to Poetry for dependency management
+  * Better dependency resolution
+  * Lock file (`poetry.lock`) for reproducible builds
+  * Cleaner development workflow
+  * Backward compatible - `pip install .` still works
+
+### New Files
+* `swebench/collect/platform_client.py` - Abstract interface for platform-agnostic API operations
+* `swebench/collect/github_client.py` - GitHub API client implementation (extracted from utils.py)
+* `swebench/collect/gitlab_client.py` - GitLab API client implementation using python-gitlab library
+
+### Modified Files
+* `swebench/collect/print_pulls.py` - Added GitLab support, batch MR collection from JSON file
+* `swebench/collect/build_dataset.py` - Platform-agnostic task instance creation, cross-project issue support
+* `swebench/collect/get_tasks_pipeline.py` - Mixed platform support, auto-detection per repository
+* `swebench/collect/utils.py` - Cross-project issue fetching, flexible timestamp parsing
+* `pyproject.toml` - Converted to Poetry format, added python-gitlab dependency
+* `README.md` - Added GitLab support section and Poetry installation instructions
+* `swebench/collect/README.md` - Comprehensive GitLab documentation with examples
+
+### New Features
+* Batch MR collection using JSON file with `--pull_numbers_file` flag
+* Cross-project issue references automatically create separate API clients
+* Extended issue resolution keyword matching with flexible regex patterns
+* Platform-agnostic timestamp parsing (supports both UTC and timezone offsets)
+* Graceful handling of GitLab Notes API authentication limitations
+
+### Breaking Changes
+* None - fully backward compatible with existing GitHub workflows
+
+### Dependencies
+* Added: `python-gitlab ^4.0.0` for GitLab API support
+* Python version requirement: `^3.10` (previously 3.8+)
+
+### Known Limitations
+* GitLab Notes API requires authentication even for public projects (GitLab API limitation)
+* Issue comments (hints) may be unavailable without proper token, but task instances are still created
+* Evaluation harness updates for GitLab not included in this release
+
 ## [2.0.12] - 7/21/2024
 * Minor naming changes
 * #186 fix: correct some typings and a incorrect function call

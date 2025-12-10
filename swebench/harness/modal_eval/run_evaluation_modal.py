@@ -4,19 +4,27 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
+import traceback
+from dataclasses import dataclass
+from pathlib import Path
+from typing import cast
+
 import modal
 import modal.container_process
 import modal.io_streams
 import tenacity
-import time
-import traceback
 
-from dataclasses import dataclass
-from pathlib import Path
+from swebench.harness.constants import (
+    APPLY_PATCH_FAIL,
+    APPLY_PATCH_PASS,
+    RUN_EVALUATION_LOG_DIR,
+)
 from swebench.harness.docker_build import setup_logger
+from swebench.harness.grading import get_eval_report
 from swebench.harness.reporting import make_run_report
+from swebench.harness.test_spec.test_spec import TestSpec, make_test_spec
 from swebench.harness.utils import EvaluationError
-from typing import cast
 
 SANDBOX_ENTRYPOINT = "run_evaluation_modal_entrypoint"
 LOCAL_SANDBOX_ENTRYPOINT_PATH = (
@@ -27,14 +35,6 @@ REMOTE_SANDBOX_ENTRYPOINT_PATH = f"/root/{SANDBOX_ENTRYPOINT}.py"
 app = modal.App("swebench-evaluation")
 
 swebench_image = modal.Image.debian_slim().pip_install("swebench", "tenacity")
-
-from swebench.harness.constants import (
-    APPLY_PATCH_FAIL,
-    APPLY_PATCH_PASS,
-    RUN_EVALUATION_LOG_DIR,
-)
-from swebench.harness.grading import get_eval_report
-from swebench.harness.test_spec.test_spec import make_test_spec, TestSpec
 
 
 @dataclass

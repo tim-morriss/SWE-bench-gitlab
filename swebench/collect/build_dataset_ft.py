@@ -5,9 +5,9 @@ import glob
 import json
 import os
 import random
+from datetime import datetime
 
 from tqdm import tqdm
-from datetime import datetime
 
 
 def main(instances_path: str, output_path: str, eval_path: str, seed: int):

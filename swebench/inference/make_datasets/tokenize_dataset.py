@@ -2,13 +2,13 @@
 
 """Provided a source (raw) directory and the final (eval) directory, create a training split by removing all instances that are in the final directory from the source directory."""
 
-import os
 import logging
+import os
 from argparse import ArgumentParser
 from pathlib import Path
 
 import tiktoken
-from datasets import disable_caching, load_from_disk, load_dataset
+from datasets import disable_caching, load_dataset, load_from_disk
 from tqdm.auto import tqdm
 from transformers import LlamaTokenizer
 

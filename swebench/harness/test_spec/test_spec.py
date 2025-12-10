@@ -1,6 +1,5 @@
 import hashlib
 import json
-
 from dataclasses import dataclass
 from typing import Any, Optional, Union, cast
 
@@ -18,9 +17,9 @@ from swebench.harness.dockerfiles import (
     get_dockerfile_instance,
 )
 from swebench.harness.test_spec.create_scripts import (
-    make_repo_script_list,
     make_env_script_list,
     make_eval_script_list,
+    make_repo_script_list,
 )
 
 
@@ -188,8 +187,8 @@ def make_test_spec(
     repo = instance["repo"]
     version = instance.get("version")
     base_commit = instance["base_commit"]
-    problem_statement = instance.get("problem_statement")
-    hints_text = instance.get("hints_text")  # Unused
+    _problem_statement = instance.get("problem_statement")
+    _hints_text = instance.get("hints_text")  # Unused
     test_patch = instance["test_patch"]
 
     def _from_json_or_obj(key: str) -> Any:

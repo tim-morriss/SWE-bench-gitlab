@@ -1,11 +1,9 @@
 from swebench.harness.constants import MAP_REPO_TO_EXT
-from swebench.harness.test_spec.javascript import (
-    make_eval_script_list_js,
-)
+from swebench.harness.test_spec.javascript import make_eval_script_list_js
 from swebench.harness.test_spec.python import (
-    make_repo_script_list_py,
     make_env_script_list_py,
     make_eval_script_list_py,
+    make_repo_script_list_py,
 )
 from swebench.harness.test_spec.utils import (
     make_env_script_list_common,

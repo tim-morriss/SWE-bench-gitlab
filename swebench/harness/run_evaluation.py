@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-import docker
 import json
 import platform
 import threading
 import traceback
 
+import docker
+
 if platform.system() == "Linux":
     import resource
 
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from pathlib import Path, PurePosixPath
+
 from tqdm.auto import tqdm
 
 from swebench.harness.constants import (
@@ -23,11 +25,18 @@ from swebench.harness.constants import (
     KEY_INSTANCE_ID,
     KEY_MODEL,
     KEY_PREDICTION,
-    LOG_REPORT,
     LOG_INSTANCE,
+    LOG_REPORT,
     LOG_TEST_OUTPUT,
     RUN_EVALUATION_LOG_DIR,
     UTF8,
+)
+from swebench.harness.docker_build import (
+    BuildImageError,
+    build_container,
+    build_env_images,
+    close_logger,
+    setup_logger,
 )
 from swebench.harness.docker_utils import (
     clean_images,
@@ -38,27 +47,17 @@ from swebench.harness.docker_utils import (
     remove_image,
     should_remove,
 )
-from swebench.harness.docker_build import (
-    BuildImageError,
-    build_container,
-    build_env_images,
-    close_logger,
-    setup_logger,
-)
 from swebench.harness.grading import get_eval_report
+from swebench.harness.modal_eval import run_instances_modal, validate_modal_credentials
 from swebench.harness.reporting import make_run_report
-from swebench.harness.modal_eval import (
-    run_instances_modal,
-    validate_modal_credentials,
-)
-from swebench.harness.test_spec.test_spec import make_test_spec, TestSpec
+from swebench.harness.test_spec.test_spec import TestSpec, make_test_spec
 from swebench.harness.utils import (
     EvaluationError,
-    load_swebench_dataset,
     get_predictions_from_file,
+    load_swebench_dataset,
+    optional_str,
     run_threadpool,
     str2bool,
-    optional_str,
 )
 
 GIT_APPLY_CMDS = [
@@ -134,8 +133,8 @@ def run_instance(
                 image_build_link.symlink_to(
                     build_dir.absolute(), target_is_directory=True
                 )
-            except:
-                # some error, idk why
+            except (OSError, NotImplementedError):
+                # Symlink creation may fail on some filesystems
                 pass
 
     # Set up logger

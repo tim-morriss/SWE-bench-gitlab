@@ -1,22 +1,22 @@
-import json
-import os
 import ast
-import jedi
+import json
+import logging
+import os
 import shutil
-import traceback
 import subprocess
-from filelock import FileLock
-from typing import Any
-from datasets import load_from_disk, load_dataset
-from pyserini.search.lucene import LuceneSearcher
-from git import Repo
-from pathlib import Path
-from tqdm.auto import tqdm
+import traceback
 from argparse import ArgumentParser
+from pathlib import Path
+from typing import Any
+
+import jedi
+from datasets import load_dataset, load_from_disk
+from filelock import FileLock
+from git import Repo
+from pyserini.search.lucene import LuceneSearcher
+from tqdm.auto import tqdm
 
 from swebench.inference.make_datasets.utils import list_files, string_to_bool
-
-import logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ def file_name_and_docs_jedi(filename, relative_path):
         text += f"{module.full_name}\n"
         if docstring:
             text += f"{docstring}\n\n"
-        abspath = Path(filename).absolute()
+        _abspath = Path(filename).absolute()
         names = [
             name
             for name in script.get_names(
@@ -133,7 +133,7 @@ def file_name_and_docs_jedi(filename, relative_path):
                 docstring = name.docstring()
                 if docstring:
                     text += f"{docstring}\n\n"
-            except:
+            except Exception:
                 continue
     except Exception as e:
         logger.error(e)
@@ -406,7 +406,7 @@ def get_index_paths_worker(
             python=python,
             instance_id=instance_id,
         )
-    except:
+    except Exception:
         logger.error(f"Failed to process {repo}/{commit} (instance {instance_id})")
         logger.error(traceback.format_exc())
     return instance_id, index_path

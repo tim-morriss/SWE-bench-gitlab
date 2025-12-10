@@ -14,7 +14,7 @@
 
 <p align="center">
     <a href="https://www.python.org/">
-        <img alt="Build" src="https://img.shields.io/badge/Python-3.8+-1f425f.svg?color=purple">
+        <img alt="Build" src="https://img.shields.io/badge/Python-3.10+-1f425f.svg?color=purple">
     </a>
     <a href="https://copyright.princeton.edu/policy">
         <img alt="License" src="https://img.shields.io/badge/License-MIT-blue">
@@ -39,7 +39,7 @@ Code and data for the following works:
 * **[Jan. 16, 2024]**: SWE-bench has been accepted to ICLR 2024 as an oral presentation! ([OpenReview 🔗](https://openreview.net/forum?id=VTF8yNQM66))
 
 ## 👋 Overview
-SWE-bench is a benchmark for evaluating large language models on real world software issues collected from GitHub.
+SWE-bench is a benchmark for evaluating large language models on real world software issues collected from GitHub and GitLab.
 Given a *codebase* and an *issue*, a language model is tasked with generating a *patch* that resolves the described problem.
 
 <img src="docs/assets/figures/teaser.png">
@@ -50,19 +50,46 @@ from datasets import load_dataset
 swebench = load_dataset('princeton-nlp/SWE-bench', split='test')
 ```
 
+### GitLab Support
+This fork extends SWE-bench to support **GitLab.com** and self-hosted GitLab instances! You can now:
+- Collect task instances from GitLab merge requests (MRs)
+- Handle cross-project issue references
+- Support mixed GitHub/GitLab datasets
+- Use the same data schema for both platforms
+
+See the [collection guide](swebench/collect/README.md) for GitLab-specific usage examples.
+
 ## 🚀 Set Up
 SWE-bench uses Docker for reproducible evaluations.
 Follow the instructions in the [Docker setup guide](https://docs.docker.com/engine/install/) to install Docker on your machine.
 If you're setting up on Linux, we recommend seeing the [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/) as well.
 
-Finally, to build SWE-bench from source, follow these steps:
+### Installation
+
+SWE-bench supports multiple installation methods. We recommend using Poetry for the best experience, but pip installation is also supported.
+
+**Option 1: Poetry (Recommended)**
+```bash
+# Install Poetry if you haven't already
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Clone and install SWE-bench
+git clone git@github.com:princeton-nlp/SWE-bench.git
+cd SWE-bench
+poetry install
+
+# Optional: Install with additional dependency groups
+poetry install --with datasets,test,docs
+```
+
+**Option 2: pip**
 ```bash
 git clone git@github.com:princeton-nlp/SWE-bench.git
 cd SWE-bench
 pip install -e .
 ```
 
-Test your installation by running:
+### Test Your Installation
 ```bash
 python -m swebench.harness.run_evaluation \
     --predictions_path gold \

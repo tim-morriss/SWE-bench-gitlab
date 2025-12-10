@@ -4,15 +4,15 @@ import json
 import logging
 import os
 import re
-import requests
 import subprocess
+from multiprocessing import Manager, Pool
 
-from multiprocessing import Pool, Manager
+import requests
 
 from swebench.versioning.constants import (
-    SWE_BENCH_URL_RAW,
     MAP_REPO_TO_VERSION_PATHS,
     MAP_REPO_TO_VERSION_PATTERNS,
+    SWE_BENCH_URL_RAW,
 )
 from swebench.versioning.utils import get_instances, split_instances
 
@@ -73,7 +73,8 @@ def get_version(instance, is_build=False, path_repo=None):
     Returns:
         str: Version text, if found
     """
-    keep_major_minor = lambda x, sep: ".".join(x.strip().split(sep)[:2])
+    def keep_major_minor(x, sep):
+        return ".".join(x.strip().split(sep)[:2])
     paths_to_version = MAP_REPO_TO_VERSION_PATHS[instance["repo"]]
     version = None
     for path_to_version in paths_to_version:
@@ -275,12 +276,14 @@ def main(args):
             [
                 {
                     "data_tasks": data_task_list,
-                    "save_path": f"{repo_prefix}_versions_{i}.json"
-                    if args.retrieval_method == "github"
-                    else f"{repo_prefix}_versions_{i}_web.json",
-                    "not_found_list": shared_result_list
-                    if args.retrieval_method == "mix"
-                    else None,
+                    "save_path": (
+                        f"{repo_prefix}_versions_{i}.json"
+                        if args.retrieval_method == "github"
+                        else f"{repo_prefix}_versions_{i}_web.json"
+                    ),
+                    "not_found_list": (
+                        shared_result_list if args.retrieval_method == "mix" else None
+                    ),
                 }
                 for i, data_task_list in enumerate(data_task_lists)
             ],

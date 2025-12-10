@@ -1,6 +1,7 @@
 import unittest
-from swebench.harness.utils import run_threadpool
+
 from swebench.harness.test_spec.python import clean_environment_yml, clean_requirements
+from swebench.harness.utils import run_threadpool
 
 
 class UtilTests(unittest.TestCase):
